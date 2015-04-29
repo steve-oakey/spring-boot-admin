@@ -80,6 +80,7 @@ import de.codecentric.boot.admin.registry.store.HazelcastApplicationStore;
 import de.codecentric.boot.admin.registry.store.SimpleApplicationStore;
 import de.codecentric.boot.admin.zuul.ApplicationRouteLocator;
 import de.codecentric.boot.admin.zuul.ApplicationRouteRefreshListener;
+import de.codecentric.boot.admin.zuul.SecureHostRoutingFilter;
 
 @Configuration
 public class AdminServerWebConfiguration extends WebMvcConfigurerAdapter implements ApplicationContextAware {
@@ -176,12 +177,12 @@ public class AdminServerWebConfiguration extends WebMvcConfigurerAdapter impleme
 		}
 
 		@Bean
-		public SimpleHostRoutingFilter simpleHostRoutingFilter() {
+		public SecureHostRoutingFilter simpleHostRoutingFilter() {
 			ProxyRequestHelper helper = new ProxyRequestHelper();
 			if (this.traces != null) {
 				helper.setTraces(this.traces);
 			}
-			return new SimpleHostRoutingFilter(helper);
+			return new SecureHostRoutingFilter(helper);
 		}
 
 		@Bean

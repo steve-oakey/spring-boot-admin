@@ -15,17 +15,31 @@
  */
 package de.codecentric.boot.admin.config;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Optional;
 
+import javax.net.ssl.SSLContext;
+
+import org.apache.http.client.HttpClient;
+import org.apache.http.conn.ssl.SSLContextBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.context.embedded.Ssl;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.client.RestTemplate;
 
 import de.codecentric.boot.admin.actuate.LogfileMvcEndpoint;
@@ -48,17 +62,55 @@ public class SpringBootAdminClientAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ApplicationRegistrator registrator(AdminProperties admin,
-			AdminClientProperties client) {
-		return new ApplicationRegistrator(createRestTemplate(admin), admin, client);
+			AdminClientProperties client, RestTemplate restTemplate) {
+		return new ApplicationRegistrator(restTemplate, admin, client);
 	}
 
-	protected RestTemplate createRestTemplate(AdminProperties admin) {
-		RestTemplate template = new RestTemplate();
-		template.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+	@Bean
+	@ConditionalOnProperty(prefix = "server.ssl", name = "keyStore")
+	public RestTemplate secureRestTemplate(ServerProperties serverProperties)
+			throws Exception {
+		Ssl ssl = serverProperties.getSsl();
+		SSLContextBuilder builder = new SSLContextBuilder();
+		builder.loadKeyMaterial(
+				createKeyStore(ssl.getKeyStore(), ssl.getKeyStorePassword()),
+				ssl.getKeyPassword().toCharArray());
 
-		if (admin.getUsername() != null) {
-			template.setInterceptors(Arrays.<ClientHttpRequestInterceptor> asList(new BasicAuthHttpRequestInterceptor(
-					admin.getUsername(), admin.getPassword())));
+		Optional<String> trustStore = Optional.ofNullable(ssl.getTrustStore());
+		if (trustStore.isPresent()) {
+			builder.loadTrustMaterial(createKeyStore(ssl.getTrustStore(),
+					ssl.getTrustStorePassword()));
+		}
+		builder.setSecureRandom(new SecureRandom());
+		builder.useProtocol(ssl.getProtocol());
+		SSLContext context = builder.build();
+
+		HttpClient client = HttpClients.custom().setSslcontext(context).build();
+		ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(
+				client);
+		return new RestTemplate(factory);
+	}
+
+	private KeyStore createKeyStore(String keyStore, String keyStorePassword)
+			throws Exception {
+		KeyStore store = KeyStore.getInstance("JKS");
+		try (InputStream stream = new FileInputStream(
+				ResourceUtils.getFile(keyStore))) {
+			store.load(stream, keyStorePassword.toCharArray());
+			return store;
+		}
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public RestTemplate restTemplate(AdminProperties adminProperties) {
+		RestTemplate template = new RestTemplate();
+		
+		if (adminProperties.getUsername() != null) {
+			template.setInterceptors(Arrays
+					.<ClientHttpRequestInterceptor> asList(new BasicAuthHttpRequestInterceptor(
+							adminProperties.getUsername(), adminProperties
+									.getPassword())));
 		}
 
 		return template;
