@@ -5,6 +5,8 @@ target/
 .settings/
 .classpath
 .project
+.factorypath
+.tern-project
 
 # Intellij
 .idea/
