@@ -15,36 +15,29 @@
  */
 package de.codecentric.boot.admin.config;
 
-import javax.activation.MimeType;
-import javax.mail.internet.MimeMessage;
-
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.mail.MailProperties;
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.MailSender;
 
 import de.codecentric.boot.admin.notify.MailNotifier;
+import de.codecentric.boot.admin.notify.MailNotifierProperties;
 
 @Configuration
-@ConditionalOnClass({ MimeMessage.class, MimeType.class })
-@ConditionalOnProperty(prefix = "spring.mail", value = "host")
-@ConditionalOnMissingBean(MailSender.class)
-@EnableConfigurationProperties(MailProperties.class)
-public class MailNotifierConfiguration extends MailSenderAutoConfiguration {
-
+@ConditionalOnBean(MailSender.class)
+@ConditionalOnProperty(prefix = "spring.boot.admin.notify", name = "enabled", matchIfMissing = true)
+@AutoConfigureAfter(MailSenderAutoConfiguration.class)
+@EnableConfigurationProperties(MailNotifierProperties.class)
+public class MailNotifierConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = "spring.boot.admin.notify", name = "enabled", matchIfMissing = true)
-	@ConfigurationProperties("spring.boot.admin.notify")
 	public MailNotifier mailNotifier() {
-		return new MailNotifier(mailSender());
+		return new MailNotifier();
 	}
-
 }

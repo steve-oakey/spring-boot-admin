@@ -12,6 +12,7 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.PropertyPlaceholderAutoConfiguration;
+import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.ServerPropertiesAutoConfiguration;
 import org.springframework.boot.test.EnvironmentTestUtils;
 import org.springframework.cloud.client.discovery.noop.NoopDiscoveryClientAutoConfiguration;
@@ -45,8 +46,7 @@ public class AdminServerWebConfigurationTest {
 
 		config.extendMessageConverters(converters);
 
-		assertThat(converters,
-				hasItem(isA(MappingJackson2HttpMessageConverter.class)));
+		assertThat(converters, hasItem(isA(MappingJackson2HttpMessageConverter.class)));
 		assertThat(converters.size(), is(1));
 	}
 
@@ -77,6 +77,13 @@ public class AdminServerWebConfigurationTest {
 	}
 
 	@Test
+	public void simpleConfig_mail_disabled() {
+		load("spring.mail.host:localhost", "spring.boot.admin.notify.enabled=false",
+				"spring.boot.admin.hazelcast.enabled:false", "spring.boot.admin.discovery.enabled:false");
+		assertTrue(context.getBeansOfType(MailNotifier.class).isEmpty());
+	}
+
+	@Test
 	public void hazelcastConfig() {
 		load("spring.boot.admin.hazelcast.enabled:true", "spring.boot.admin.discovery.enabled:false");
 		assertTrue(context.getBean(ApplicationStore.class) instanceof HazelcastApplicationStore);
@@ -95,6 +102,7 @@ public class AdminServerWebConfigurationTest {
 		applicationContext.register(PropertyPlaceholderAutoConfiguration.class);
 		applicationContext.register(ServerPropertiesAutoConfiguration.class);
 		applicationContext.register(NoopDiscoveryClientAutoConfiguration.class);
+		applicationContext.register(MailSenderAutoConfiguration.class);
 		applicationContext.register(AdminServerWebConfiguration.class);
 
 		EnvironmentTestUtils.addEnvironment(applicationContext, environment);
