@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 package de.codecentric.boot.admin.discovery;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.discovery.event.HeartbeatEvent;
 import org.springframework.cloud.client.discovery.event.HeartbeatMonitor;
 import org.springframework.cloud.client.discovery.event.InstanceRegisteredEvent;
 import org.springframework.cloud.client.discovery.event.ParentHeartbeatEvent;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.util.StringUtils;
 
 import de.codecentric.boot.admin.model.Application;
 import de.codecentric.boot.admin.registry.ApplicationRegistry;
@@ -33,20 +30,14 @@ import de.codecentric.boot.admin.registry.ApplicationRegistry;
  */
 public class ApplicationDiscoveryListener implements ApplicationListener<ApplicationEvent> {
 
-	private final DiscoveryClient discoveryClient;
+	private final DiscoveryClientFacade discoveryClient;
 
 	private final ApplicationRegistry registry;
 
 	private final HeartbeatMonitor monitor = new HeartbeatMonitor();
 
-	private String managementContextPath = "";
 
-	private String serviceContextPath = "";
-
-	private String healthEndpoint = "health";
-
-
-	public ApplicationDiscoveryListener(DiscoveryClient discoveryClient, ApplicationRegistry registry) {
+	public ApplicationDiscoveryListener(DiscoveryClientFacade discoveryClient, ApplicationRegistry registry) {
 		this.discoveryClient = discoveryClient;
 		this.registry = registry;
 	}
@@ -74,42 +65,8 @@ public class ApplicationDiscoveryListener implements ApplicationListener<Applica
 	}
 
 	public void discover() {
-		for (String serviceId : discoveryClient.getServices()) {
-			for (ServiceInstance instance : discoveryClient.getInstances(serviceId)) {
-				registry.register(convert(instance));
-			}
+		for(Application application : discoveryClient.discover()) {
+			registry.register(application);
 		}
-	}
-
-	private Application convert(ServiceInstance instance) {
-		String serviceUrl = append(instance.getUri().toString(), serviceContextPath);
-		String managementUrl = append(instance.getUri().toString(), managementContextPath);
-		String healthUrl = append(managementUrl, healthEndpoint);
-
-		return Application.create(instance.getServiceId())
-				.withHealthUrl(healthUrl).withManagementUrl(managementUrl)
-				.withServiceUrl(serviceUrl).build();
-	}
-
-	public void setManagementContextPath(String managementContextPath) {
-		this.managementContextPath = managementContextPath;
-	}
-
-	public void setServiceContextPath(String serviceContextPath) {
-		this.serviceContextPath = serviceContextPath;
-	}
-
-	public void setHealthEndpoint(String healthEndpoint) {
-		this.healthEndpoint = healthEndpoint;
-	}
-
-	private String append(String uri, String path) {
-		String baseUri = uri.replaceFirst("/+$", "");
-		if (StringUtils.isEmpty(path)) {
-			return baseUri;
-		}
-
-		String normPath = path.replaceFirst("^/+", "").replaceFirst("/+$", "");
-		return baseUri + "/" + normPath;
 	}
 }

@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import de.codecentric.boot.admin.discovery.ApplicationDiscoveryListener;
+import de.codecentric.boot.admin.discovery.DiscoveryClientFacade;
 import de.codecentric.boot.admin.registry.ApplicationRegistry;
 
 @Configuration
@@ -40,15 +41,15 @@ public  class DiscoveryClientConfiguration {
 	private String managementPath;
 
 	@Autowired
-	private DiscoveryClient discoveryClient;
-
-	@Autowired
 	private ApplicationRegistry registry;
+	
+	@Bean
+	DiscoveryClientFacade discoveryClientFacade() {
+		return new DiscoveryClientFacade();
+	}
 
 	@Bean
 	ApplicationListener<ApplicationEvent> applicationDiscoveryListener() {
-		ApplicationDiscoveryListener listener = new ApplicationDiscoveryListener(discoveryClient, registry);
-		listener.setManagementContextPath(managementPath);
-		return listener;
+		return new ApplicationDiscoveryListener(discoveryClientFacade(), registry);
 	}
 }
