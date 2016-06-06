@@ -107,6 +107,10 @@ module.exports = function ($resource, $http) {
   Application.prototype.getTraces = function () {
     return $http.get('api/applications/' + this.id + '/trace').then(convertArray);
   };
+  
+  Application.prototype.getAutoConfigReport = function() {
+    return $http.get('api/applications/' + this.id + '/autoconfig').then(convert);
+  };
 
   return Application;
 };

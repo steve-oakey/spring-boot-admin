@@ -1,0 +1,31 @@
+<h4 ng-bind="$ctrl.reportType" />
+<sba-accordion ng-repeat="entry in $ctrl.reportEntries | orderBy:'bean' | filter:$ctrl.searchFilter">
+    <sba-accordion-group>
+        <sba-accordion-heading>
+            {{entry.bean}}
+        </sba-accordion-heading>
+        <sba-accordion-body>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Condition</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody
+                    <tr ng-repeat="condition in entry.conditions | orderBy:'condition'">
+                        <td ng-bind="condition.condition" />
+                        <td ng-bind="condition.message" />
+                    </tr>
+                </tbody>
+            </table>
+        </sba-accordion-body>
+    </sba-accordion-group>
+</sba-accordion>
+<!--<ul>
+    <li ng-repeat="entry in $ctrl.reportEntries | orderBy:'bean' | filter:$ctrl.searchFilter">{{entry.bean}}
+        <ul>
+            <li ng-repeat="condition in entry.conditions | orderBy:'condition'">{{condition.condition}} - {{condition.message}}</li>
+        </ul>
+    </li>
+</ul>-->

@@ -1,0 +1,6 @@
+<div class="input-append">
+    <input placeholder="Filter" class="input-xxlarge" type="search" ng-model="searchFilter.bean" />
+    <button class="btn" title="reload list" ng-click="refresh()"><i class="fa fa-repeat"></i></button>
+</div>
+<sba-autoconfig-report report-type="Positive Matches" report-entries="positiveMatches" />
+<sba-autoconfig-report report-type="Negative Matches" report-entries="negativeMatches" />
